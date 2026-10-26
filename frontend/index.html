@@ -1473,7 +1473,10 @@
                     </div>
                     <div style="display:flex; align-items:center; gap:5px; background: #f1f2f6; padding: 5px 10px; border-radius: 10px;">
                         <button onclick="changeQuantity(${i},-1)" style="border:none; background:none; cursor:pointer; font-weight:bold; color:#6c5ce7;">−</button>
-                        <span style="width: 25px; text-align: center; font-weight: bold;">${item.quantity}</span>
+                        <input type="number" class="cart-qty-input" value="${item.quantity}" min="0" inputmode="numeric"
+                               onfocus="this.select()"
+                               onkeydown="if(event.key==='Enter'){this.blur();}"
+                               onchange="setQuantity(${i}, this.value)">
                         <button onclick="changeQuantity(${i},1)" style="border:none; background:none; cursor:pointer; font-weight:bold; color:#6c5ce7;">+</button>
                     </div>
                     <div style="min-width: 70px; text-align: right; font-weight: 700;">₱${itemTotal.toFixed(2)}</div>
@@ -1490,6 +1493,24 @@
         if (delta > 0 && item.quantity >= original.stockQty) return alert("Out of stock!");
         item.quantity += delta;
         if (item.quantity <= 0) cart.splice(idx, 1);
+        syncCart();
+    }
+
+    // Typed quantity: runs when the user finishes typing (blur / Enter)
+    function setQuantity(idx, value) {
+        const item = cart[idx];
+        if (!item) return;
+        const original = allItems.find(i => i.itemId === item.itemId);
+        let qty = parseInt(value, 10);
+
+        if (isNaN(qty)) { syncCart(); return; }          // empty / invalid -> restore old value
+        if (qty <= 0) { cart.splice(idx, 1); syncCart(); return; } // 0 removes, same as the - button
+
+        if (original && qty > original.stockQty) {
+            qty = original.stockQty;
+            showToast('Only ' + qty + ' in stock!', '⚠️');
+        }
+        item.quantity = qty;
         syncCart();
     }
 

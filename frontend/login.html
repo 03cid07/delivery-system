@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messy Café - Login</title>
+    <style>
+        :root { --primary: #6c5ce7; --primary-hover: #5649c0; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f1f2f6; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        
+        .login-box { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
+        
+        h2 { color: var(--primary); margin-top: 0; margin-bottom: 20px; }
+        
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1.5px solid #eee; border-radius: 10px; box-sizing: border-box; outline: none; transition: 0.2s; }
+        input:focus { border-color: var(--primary); }
+        
+        button { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; font-size: 16px; }
+        button:hover { background: var(--primary-hover); transform: translateY(-1px); }
+        
+        .error { color: #d63031; font-size: 0.9rem; margin-top: 15px; display: none; background: #fff2f0; padding: 10px; border-radius: 8px; border: 1px solid #ffccc7; }
+        
+        .footer-links { margin-top: 25px; padding-top: 20px; border-top: 1px solid #eee; font-size: 14px; color: #636e72; }
+        .footer-links a { color: var(--primary); text-decoration: none; font-weight: bold; }
+        .footer-links a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+    <div class="login-box">
+<h1 class="cafe-heading" style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+  <img src="messy-logo.jpg" alt="Messy Cafe Logo" style="height: 1em; width: 1em; border-radius: 50%;">
+  <span>Messy Café Login</span>
+</h1>
+        <input type="text" id="username" placeholder="Username">
+        <input type="password" id="password" placeholder="Password">
+        
+        <button onclick="handleLogin()">Login</button>
+        
+        <div id="errorMsg" class="error">Invalid username or password!</div>
+
+        <div class="footer-links">
+            <div>Don't have an account? <a href="register.html">Create Account</a></div>
+            <div style="margin-top: 10px;"><a href="#" style="font-weight: normal; font-size: 12px; color: #b2bec3;">Forgot Password?</a></div>
+        </div>
+    </div>
+
+    <script>
+    async function handleLogin() {
+    const loginBtn = document.querySelector('button'); // Get your login button
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+    const errorMsg = document.getElementById('errorMsg');
+
+    if (errorMsg) errorMsg.style.display = 'none';
+
+    if (!username || !password) {
+        alert("Please enter both username and password.");
+        return;
+    }
+
+    // UI Improvement: Disable button during fetch
+    loginBtn.disabled = true;
+    const originalBtnText = loginBtn.innerText;
+    loginBtn.innerText = "Authenticating...";
+
+    try {
+        const response = await fetch('http://localhost:8081/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
+
+        if (response.ok) {
+            const user = await response.json();
+            
+            // 1. Prepare the user data object
+            // These keys match your User.java variables exactly
+            const sessionData = JSON.stringify({
+                user_id: user.user_id,
+                username: user.username,
+                role: user.role,
+                display_name: user.display_name,
+                address: user.address,
+                phone_number: user.phone_number
+            });
+
+            // 2. SAVE TO THE CORRECT KEY BASED ON ROLE
+            console.log("Login Success! Role:", user.role);
+
+            if (user.role === 'ADMIN') {
+                sessionStorage.setItem('adminUser', sessionData);
+                window.location.href = 'admin.html'; 
+            } else if (user.role === 'RIDER') {
+                sessionStorage.setItem('riderUser', sessionData);
+                window.location.href = 'rider.html';
+            } else {
+                // Default role for CUSTOMER
+                sessionStorage.setItem('currentUser', sessionData);
+                window.location.href = 'index.html';
+            }
+        } else {
+            // Handle 401 Unauthorized or 404
+            if (errorMsg) {
+                errorMsg.innerText = "Invalid username or password.";
+                errorMsg.style.display = 'block';
+            }
+        }
+    } catch (err) {
+        console.error("Connection Error:", err);
+        alert("Server connection failed. Is your Spring Boot app running on port 8081?");
+    } finally {
+        // Re-enable button
+        loginBtn.disabled = false;
+        loginBtn.innerText = originalBtnText;
+    }
+}
+
+    document.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            handleLogin();
+        }
+    });
+</script>
+</body>
+</html>

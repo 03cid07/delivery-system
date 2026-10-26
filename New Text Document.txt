@@ -1,0 +1,10 @@
+# 1. Stop and REMOVE the old database data
+docker-compose down -v
+
+# 2. Re-build the app with the new property settings
+.\mvnw clean package -DskipTests
+
+# 3. Start it back up
+docker-compose up -d
+
+docker logs -f messy_cafe_api
